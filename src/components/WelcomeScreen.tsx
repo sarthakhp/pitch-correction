@@ -1,54 +1,57 @@
-import { useAudioInput, type MicrophoneStatus } from '../hooks/useAudioInput';
+import { useState } from 'react';
 import './WelcomeScreen.css';
 
 interface WelcomeScreenProps {
-  onReady: (stream: MediaStream, audioContext: AudioContext) => void;
+  onContinue: () => void;
 }
 
-const WelcomeScreen = ({ onReady }: WelcomeScreenProps) => {
-  const { status, error, stream, audioContext, requestMicrophone } = useAudioInput();
+const WelcomeScreen = ({ onContinue }: WelcomeScreenProps) => {
+  const [permissionGranted, setPermissionGranted] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleEnableMicrophone = async () => {
-    await requestMicrophone();
+  const handleCheckPermission = async () => {
+    setIsChecking(true);
+    setError(null);
+
+    try {
+      const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
+
+      if (result.state === 'granted') {
+        console.log('[WelcomeScreen] Microphone permission already granted');
+        setPermissionGranted(true);
+      } else if (result.state === 'prompt') {
+        console.log('[WelcomeScreen] Requesting microphone permission...');
+        const testStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        testStream.getTracks().forEach(track => track.stop());
+        console.log('[WelcomeScreen] Microphone permission granted');
+        setPermissionGranted(true);
+      } else {
+        setError('Microphone permission was denied. Please allow microphone access in your browser settings.');
+      }
+    } catch (err) {
+      console.error('[WelcomeScreen] Error checking microphone permission:', err);
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          setError('Microphone access was denied. Please allow microphone access and try again.');
+        } else if (err.name === 'NotFoundError') {
+          setError('No microphone found. Please connect a microphone and try again.');
+        } else {
+          setError(`Failed to access microphone: ${err.message}`);
+        }
+      } else {
+        setError('An unknown error occurred while checking microphone access.');
+      }
+    } finally {
+      setIsChecking(false);
+    }
   };
 
   const handleContinue = () => {
-    if (stream && audioContext) {
-      onReady(stream, audioContext);
-    }
+    onContinue();
   };
 
-  const getStatusMessage = (status: MicrophoneStatus): string => {
-    switch (status) {
-      case 'requesting':
-        return 'Requesting microphone access...';
-      case 'granted':
-        return 'Microphone access granted! Ready to start.';
-      case 'denied':
-        return 'Microphone access denied';
-      case 'unavailable':
-        return 'Microphone unavailable';
-      case 'error':
-        return 'Error accessing microphone';
-      default:
-        return '';
-    }
-  };
 
-  const getStatusIcon = (status: MicrophoneStatus): string => {
-    switch (status) {
-      case 'requesting':
-        return '⏳';
-      case 'granted':
-        return '✓';
-      case 'denied':
-      case 'unavailable':
-      case 'error':
-        return '⚠';
-      default:
-        return '🎵';
-    }
-  };
 
   return (
     <div className="welcome-screen">
@@ -94,10 +97,10 @@ const WelcomeScreen = ({ onReady }: WelcomeScreenProps) => {
             </div>
           </div>
 
-          {status !== 'idle' && (
-            <div className={`status-message status-${status}`}>
-              <span className="status-icon">{getStatusIcon(status)}</span>
-              <span className="status-text">{getStatusMessage(status)}</span>
+          {permissionGranted && (
+            <div className="status-message status-granted">
+              <span className="status-icon">✓</span>
+              <span className="status-text">Microphone permission granted! Ready to start.</span>
             </div>
           )}
 
@@ -109,17 +112,17 @@ const WelcomeScreen = ({ onReady }: WelcomeScreenProps) => {
           )}
 
           <div className="action-section">
-            {status === 'granted' ? (
+            {permissionGranted ? (
               <button className="primary-button continue-button" onClick={handleContinue}>
                 Continue to Tuner
               </button>
             ) : (
               <button
                 className="primary-button enable-button"
-                onClick={handleEnableMicrophone}
-                disabled={status === 'requesting'}
+                onClick={handleCheckPermission}
+                disabled={isChecking}
               >
-                {status === 'requesting' ? 'Requesting Access...' : 'Enable Microphone'}
+                {isChecking ? 'Checking Permission...' : 'Enable Microphone'}
               </button>
             )}
           </div>

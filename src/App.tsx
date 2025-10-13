@@ -5,23 +5,17 @@ import './App.css';
 
 function App() {
   const [isReady, setIsReady] = useState(false);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [audioContext, setAudioContext] = useState<AudioContext | null>(null);
 
-  const handleReady = (mediaStream: MediaStream, context: AudioContext) => {
-    setStream(mediaStream);
-    setAudioContext(context);
+  const handleContinue = () => {
     setIsReady(true);
   };
 
   return (
     <>
       {!isReady ? (
-        <WelcomeScreen onReady={handleReady} />
+        <WelcomeScreen onContinue={handleContinue} />
       ) : (
-        stream && audioContext && (
-          <TunerInterface stream={stream} audioContext={audioContext} />
-        )
+        <TunerInterface />
       )}
     </>
   );
