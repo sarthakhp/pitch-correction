@@ -153,6 +153,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  outline: none;
 }
 
 .listening-button.ready {

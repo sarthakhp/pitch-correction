@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useMicrophonePermission } from '../hooks/useMicrophonePermission';
 import './WelcomeScreen.css';
 
 interface WelcomeScreenProps {
@@ -6,65 +7,32 @@ interface WelcomeScreenProps {
 }
 
 const WelcomeScreen = ({ onContinue }: WelcomeScreenProps) => {
-  const [permissionGranted, setPermissionGranted] = useState(false);
-  const [isChecking, setIsChecking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    permissionGranted,
+    isChecking,
+    error,
+    checkIfPermissionGranted,
+    requestMicrophonePermission,
+  } = useMicrophonePermission();
 
-  const checkMicrophonePermission = useCallback(
-    async (autoNavigate: boolean = false) => {
-      setIsChecking(true);
-      setError(null);
-
-      try {
-        const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-
-        if (result.state === 'granted') {
-          console.log('[WelcomeScreen] Microphone permission already granted');
-          setPermissionGranted(true);
-          if (autoNavigate) {
-            onContinue();
-          }
-        } else if (result.state === 'prompt') {
-          console.log('[WelcomeScreen] Requesting microphone permission...');
-          const testStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          testStream.getTracks().forEach((track) => track.stop());
-          console.log('[WelcomeScreen] Microphone permission granted');
-          setPermissionGranted(true);
-          if (autoNavigate) {
-            onContinue();
-          }
-        } else {
-          setError(
-            'Microphone permission was denied. Please allow microphone access in your browser settings.'
-          );
-        }
-      } catch (err) {
-        console.error('[WelcomeScreen] Error checking microphone permission:', err);
-        if (err instanceof Error) {
-          if (err.name === 'NotAllowedError') {
-            setError('Microphone access was denied. Please allow microphone access and try again.');
-          } else if (err.name === 'NotFoundError') {
-            setError('No microphone found. Please connect a microphone and try again.');
-          } else {
-            setError(`Failed to access microphone: ${err.message}`);
-          }
-        } else {
-          setError('An unknown error occurred while checking microphone access.');
-        }
-      } finally {
-        setIsChecking(false);
-      }
-    },
-    [onContinue]
-  );
-
-  const handleCheckPermission = () => {
-    checkMicrophonePermission(true);
+  const handleRequestPermission = async () => {
+    await requestMicrophonePermission();
+    if (permissionGranted) {
+      onContinue();
+    }
   };
 
   useEffect(() => {
-    checkMicrophonePermission(true);
-  }, [checkMicrophonePermission]);
+    const checkAndNavigate = async () => {
+      const isGranted = await checkIfPermissionGranted();
+      if (isGranted) {
+        onContinue();
+      }
+    };
+
+    void checkAndNavigate();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="welcome-screen">
@@ -132,7 +100,7 @@ const WelcomeScreen = ({ onContinue }: WelcomeScreenProps) => {
             ) : (
               <button
                 className="primary-button enable-button"
-                onClick={handleCheckPermission}
+                onClick={handleRequestPermission}
                 disabled={isChecking}
               >
                 {isChecking ? 'Checking Permission...' : 'Enable Microphone'}
