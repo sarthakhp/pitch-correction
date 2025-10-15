@@ -51,7 +51,7 @@ export const startAudioStream = async (): Promise<AudioStreamResult> => {
 
     const sourceNode = context.createMediaStreamSource(stream);
     const analyserNode = context.createAnalyser();
-    analyserNode.fftSize = 2048;
+    analyserNode.fftSize = 2048 * 8;
 
     sourceNode.connect(analyserNode);
 
@@ -68,12 +68,13 @@ export const startAudioStream = async (): Promise<AudioStreamResult> => {
     };
   } catch (err) {
     console.error('[AudioStream] ❌ Error starting audio:', err);
-    
+
     let errorMessage = 'An unknown error occurred while accessing the microphone.';
-    
+
     if (err instanceof Error) {
       if (err.name === 'NotAllowedError') {
-        errorMessage = 'Microphone access was denied. Please allow microphone access and try again.';
+        errorMessage =
+          'Microphone access was denied. Please allow microphone access and try again.';
       } else if (err.name === 'NotFoundError') {
         errorMessage = 'No microphone found. Please connect a microphone and try again.';
       } else {
@@ -141,6 +142,3 @@ export const stopAudioStream = async (refs: AudioStreamRefs): Promise<void> => {
 
   console.log('[AudioStream] ⏸️ Listening stopped - all resources released');
 };
-
-
-

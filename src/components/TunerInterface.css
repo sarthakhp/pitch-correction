@@ -261,6 +261,91 @@
   font-weight: 500;
 }
 
+.pitch-comparison-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem auto;
+  max-width: 1000px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.pitch-display {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  border: 2px solid rgba(102, 126, 234, 0.3);
+  border-radius: 16px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pitch-display:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.pitch-display-yin {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.1) 100%);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pitch-method-label {
+  font-size: 0.85rem;
+  color: #475569;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.pitch-display-yin .pitch-method-label {
+  border-bottom-color: rgba(16, 185, 129, 0.2);
+}
+
+.pitch-label {
+  font-size: 0.9rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.pitch-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #667eea;
+  margin-bottom: 0.5rem;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+}
+
+.pitch-display-yin .pitch-value {
+  color: #10b981;
+  text-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.pitch-clarity {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 640px) {
   .tuner-header {
     flex-direction: column;
@@ -295,6 +380,24 @@
 
   .button-text {
     font-size: 1rem;
+  }
+
+  .pitch-comparison-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin: 1.5rem auto;
+  }
+
+  .pitch-display {
+    padding: 1.5rem;
+  }
+
+  .pitch-value {
+    font-size: 2rem;
+  }
+
+  .pitch-method-label {
+    font-size: 0.75rem;
   }
 }
 
@@ -331,6 +434,36 @@
     background: #334155;
     border-color: #475569;
     color: #f1f5f9;
+  }
+
+  .pitch-display {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+    border-color: rgba(102, 126, 234, 0.4);
+  }
+
+  .pitch-display-yin {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.15) 100%);
+    border-color: rgba(16, 185, 129, 0.4);
+  }
+
+  .pitch-method-label {
+    color: #cbd5e1;
+  }
+
+  .pitch-label {
+    color: #94a3b8;
+  }
+
+  .pitch-value {
+    color: #818cf8;
+  }
+
+  .pitch-display-yin .pitch-value {
+    color: #34d399;
+  }
+
+  .pitch-clarity {
+    color: #64748b;
   }
 }
 

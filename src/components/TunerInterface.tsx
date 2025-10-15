@@ -1,10 +1,24 @@
 import './TunerInterface.css';
 import { ListeningState, type ListeningStateType, useAudioStream } from '../hooks/useAudioStream';
 import ListeningControl from './ListeningControl';
+import { usePitchDetection } from '../hooks/usePitchDetection';
+import { usePitchDetectionYIN } from '../hooks/usePitchDetectionYIN';
 
 const TunerInterface = () => {
   const { isListening, error, audioRefs, toggleListening } = useAudioStream({
     autoStart: true,
+  });
+
+  const pitchResultAutocorrelation = usePitchDetection({
+    analyserNode: audioRefs.current.analyserNode,
+    audioContext: audioRefs.current.audioContext,
+    isActive: isListening === ListeningState.Listening,
+  });
+
+  const pitchResultYIN = usePitchDetectionYIN({
+    analyserNode: audioRefs.current.analyserNode,
+    audioContext: audioRefs.current.audioContext,
+    isActive: isListening === ListeningState.Listening,
   });
 
   const statusIndicatorConfigs: Record<ListeningStateType, { class: string; label: string }> = {
@@ -34,6 +48,40 @@ const TunerInterface = () => {
             <div className="error-message">
               <div className="error-icon">⚠</div>
               <div className="error-text">{error}</div>
+            </div>
+          )}
+
+          {isListening === ListeningState.Listening && (
+            <div className="pitch-comparison-container">
+              <div className="pitch-display">
+                <div className="pitch-method-label">Autocorrelation Method</div>
+                <div className="pitch-label">Detected Pitch:</div>
+                <div className="pitch-value">
+                  {pitchResultAutocorrelation.frequency !== null
+                    ? `${pitchResultAutocorrelation.frequency.toFixed(1)} Hz`
+                    : 'No pitch detected'}
+                </div>
+                {pitchResultAutocorrelation.frequency !== null && (
+                  <div className="pitch-clarity">
+                    Clarity: {(pitchResultAutocorrelation.clarity * 100).toFixed(0)}%
+                  </div>
+                )}
+              </div>
+
+              <div className="pitch-display pitch-display-yin">
+                <div className="pitch-method-label">YIN Algorithm Method</div>
+                <div className="pitch-label">Detected Pitch:</div>
+                <div className="pitch-value">
+                  {pitchResultYIN.frequency !== null
+                    ? `${pitchResultYIN.frequency.toFixed(1)} Hz`
+                    : 'No pitch detected'}
+                </div>
+                {pitchResultYIN.frequency !== null && (
+                  <div className="pitch-clarity">
+                    Clarity: {(pitchResultYIN.clarity * 100).toFixed(0)}%
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
