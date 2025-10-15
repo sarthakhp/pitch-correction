@@ -1,20 +1,11 @@
-import { useEffect } from 'react';
 import './TunerInterface.css';
 import { ListeningState, type ListeningStateType, useAudioStream } from '../hooks/useAudioStream';
+import ListeningControl from './ListeningControl';
 
 const TunerInterface = () => {
   const { isListening, error, audioRefs, toggleListening } = useAudioStream({
     autoStart: true,
   });
-
-  const listeningButtonStateConfigs: Record<
-    ListeningStateType,
-    { class: string; icon: string; label: string }
-  > = {
-    [ListeningState.Starting]: { class: 'loading', icon: '⏳', label: 'Starting Microphone...' },
-    [ListeningState.Listening]: { class: 'listening', icon: '⏸️', label: 'Stop Listening' },
-    [ListeningState.Stopped]: { class: 'ready', icon: '🎤', label: 'Start Listening' },
-  };
 
   const statusIndicatorConfigs: Record<ListeningStateType, { class: string; label: string }> = {
     [ListeningState.Listening]: { class: 'listening', label: 'Listening' },
@@ -22,30 +13,8 @@ const TunerInterface = () => {
     [ListeningState.Starting]: { class: 'active', label: 'Ready' },
   };
 
-  const currentListeningButtonClass =
-    listeningButtonStateConfigs[isListening] ?? listeningButtonStateConfigs[ListeningState.Stopped];
-
   const currentStatusIndicatorConfig =
     statusIndicatorConfigs[isListening] ?? statusIndicatorConfigs[ListeningState.Stopped];
-
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (
-        event.code === 'Space' &&
-        event.target === document.body &&
-        isListening !== ListeningState.Starting
-      ) {
-        event.preventDefault();
-        toggleListening();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [toggleListening, isListening]);
 
   return (
     <div className="tuner-interface">
@@ -59,19 +28,7 @@ const TunerInterface = () => {
         </header>
 
         <div className="tuner-content">
-          <div className="control-section">
-            <button
-              className={`listening-button ${currentListeningButtonClass.class}`}
-              onClick={toggleListening}
-              disabled={isListening === ListeningState.Starting}
-            >
-              <span className="button-icon">{currentListeningButtonClass.icon}</span>
-              <span className="button-text">{currentListeningButtonClass.label}</span>
-            </button>
-            <p className="keyboard-hint">
-              Press <kbd>Space</kbd> to toggle
-            </p>
-          </div>
+          <ListeningControl isListening={isListening} toggleListening={toggleListening} />
 
           {error && (
             <div className="error-message">

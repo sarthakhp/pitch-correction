@@ -4,7 +4,6 @@ interface UseMicrophonePermissionReturn {
   permissionGranted: boolean;
   isChecking: boolean;
   error: string | null;
-  checkIfPermissionGranted: () => Promise<boolean>;
   requestMicrophonePermission: () => Promise<void>;
 }
 
@@ -12,32 +11,6 @@ export const useMicrophonePermission = (): UseMicrophonePermissionReturn => {
   const [permissionGranted, setPermissionGranted] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const checkIfPermissionGranted = useCallback(async (): Promise<boolean> => {
-    setIsChecking(true);
-    setError(null);
-
-    try {
-      const result = await navigator.permissions.query({ name: 'microphone' as PermissionName });
-
-      if (result.state === 'granted') {
-        console.log('[useMicrophonePermission] Microphone permission already granted');
-        setPermissionGranted(true);
-        return true;
-      } else if (result.state === 'denied') {
-        setError(
-          'Microphone permission was denied. Please allow microphone access in your browser settings.'
-        );
-      }
-    } catch (err) {
-      console.error('[useMicrophonePermission] Error checking microphone permission:', err);
-    } finally {
-      setIsChecking(false);
-    }
-
-    setPermissionGranted(false);
-    return false;
-  }, []);
 
   const requestMicrophonePermission = useCallback(async (): Promise<void> => {
     setIsChecking(true);
@@ -82,7 +55,6 @@ export const useMicrophonePermission = (): UseMicrophonePermissionReturn => {
     permissionGranted,
     isChecking,
     error,
-    checkIfPermissionGranted,
     requestMicrophonePermission,
   };
 };

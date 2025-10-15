@@ -1,3 +1,5 @@
+@import './shared.css';
+
 .welcome-screen {
   min-height: 100vh;
   display: flex;
@@ -131,17 +133,6 @@
   margin-top: 1rem;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 .status-requesting {
   background: #dbeafe;
   color: #1e40af;
@@ -166,30 +157,7 @@
   font-size: 1.5rem;
 }
 
-.error-message {
-  display: flex;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: #fee2e2;
-  border-radius: 10px;
-  border-left: 4px solid #dc2626;
-  animation: slideIn 0.3s ease-out;
-}
-
-.error-icon {
-  font-size: 1.5rem;
-  color: #dc2626;
-  flex-shrink: 0;
-}
-
-.error-text {
-  color: #991b1b;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
 .action-section {
-  margin: 0.75rem 0;
   display: flex;
   justify-content: center;
 }
@@ -203,6 +171,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  margin: 1rem;
 }
 
 .enable-button {
