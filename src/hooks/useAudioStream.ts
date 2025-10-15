@@ -1,18 +1,26 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import * as React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  startAudioStream,
-  stopAudioStream,
   type AudioStreamRefs,
   type AudioStreamResult,
+  startAudioStream,
+  stopAudioStream,
 } from '../utils/audioStream';
-import * as React from 'react';
 
 interface UseAudioStreamOptions {
   autoStart?: boolean;
 }
 
+export const ListeningState = {
+  Stopped: 'stopped',
+  Starting: 'starting',
+  Listening: 'listening',
+} as const;
+
+export type ListeningStateType = (typeof ListeningState)[keyof typeof ListeningState];
+
 interface UseAudioStreamReturn {
-  isListening: number;
+  isListening: ListeningStateType;
   error: string | null;
   audioRefs: React.RefObject<AudioStreamRefs>;
   startListening: () => Promise<void>;
@@ -23,7 +31,7 @@ interface UseAudioStreamReturn {
 export const useAudioStream = (options: UseAudioStreamOptions = {}): UseAudioStreamReturn => {
   const { autoStart = false } = options;
 
-  const [isListening, setIsListening] = useState(-1);
+  const [isListening, setIsListening] = useState<ListeningStateType>(ListeningState.Stopped);
   const [error, setError] = useState<string | null>(null);
 
   const audioRefsRef = useRef<AudioStreamRefs>({
@@ -36,17 +44,17 @@ export const useAudioStream = (options: UseAudioStreamOptions = {}): UseAudioStr
   const handleAudioStreamResult = useCallback((result: AudioStreamResult) => {
     if (result.success) {
       audioRefsRef.current = result.refs;
-      setIsListening(1);
+      setIsListening(ListeningState.Listening);
     } else {
       setError(result.error || 'Failed to start audio stream');
-      setIsListening(-1);
+      setIsListening(ListeningState.Stopped);
     }
   }, []);
 
   const startListening = useCallback(async () => {
     console.log('[useAudioStream] Starting audio listening...');
     setError(null);
-    setIsListening(0);
+    setIsListening(ListeningState.Starting);
 
     const result = await startAudioStream();
     handleAudioStreamResult(result);
@@ -63,15 +71,15 @@ export const useAudioStream = (options: UseAudioStreamOptions = {}): UseAudioStr
       stream: null,
     };
 
-    setIsListening(-1);
+    setIsListening(ListeningState.Stopped);
   }, []);
 
   const toggleListening = useCallback(async () => {
-    if (isListening === 0) {
+    if (isListening === ListeningState.Starting) {
       return;
     }
 
-    if (isListening === 1) {
+    if (isListening === ListeningState.Listening) {
       await stopListening();
     } else {
       await startListening();
@@ -87,7 +95,7 @@ export const useAudioStream = (options: UseAudioStreamOptions = {}): UseAudioStr
     const initializeAudio = async () => {
       console.log('[useAudioStream] Auto-starting audio listening...');
       setError(null);
-      setIsListening(0);
+      setIsListening(ListeningState.Starting);
 
       const result = await startAudioStream();
 

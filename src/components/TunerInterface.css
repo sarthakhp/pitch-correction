@@ -67,11 +67,6 @@
   background: #10b981;
 }
 
-.status-dot.loading {
-  background: #3b82f6;
-  animation: pulse-fast 1s infinite;
-}
-
 .status-dot.listening {
   background: #f59e0b;
   animation: pulse-fast 1s infinite;
