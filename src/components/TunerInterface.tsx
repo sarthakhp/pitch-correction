@@ -1,141 +1,90 @@
 import { useEffect, useState, useRef } from 'react';
 import './TunerInterface.css';
+import {
+  startAudioStream,
+  stopAudioStream,
+  type AudioStreamRefs,
+  type AudioStreamResult,
+} from '../utils/audioStream';
 
 const TunerInterface = () => {
   const [isActive] = useState(true);
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const streamRef = useRef<MediaStream | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const sourceNodeRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const analyserNodeRef = useRef<AnalyserNode | null>(null);
+  const audioRefsRef = useRef<AudioStreamRefs>({
+    stream: null,
+    audioContext: null,
+    sourceNode: null,
+    analyserNode: null,
+  });
+
+  const handleAudioStreamResult = (result: AudioStreamResult) => {
+    if (result.success) {
+      audioRefsRef.current = result.refs;
+      setIsListening(true);
+    } else {
+      setError(result.error || 'Failed to start audio stream');
+      setIsListening(false);
+    }
+  };
 
   useEffect(() => {
+    console.log('[TunerInterface] useEffect mounted');
+    const abortController = new AbortController();
+
+    const initializeAudio = async () => {
+      console.log('[TunerInterface] Auto-starting audio listening...');
+      setError(null);
+
+      const result = await startAudioStream();
+
+      if (!abortController.signal.aborted) {
+        handleAudioStreamResult(result);
+      } else {
+        console.log('[TunerInterface] Component unmounted before audio started, stopping audio...');
+        await stopAudioStream(result.refs);
+      }
+    };
+
+    initializeAudio();
+
     return () => {
-      console.log('[TunerInterface] Component unmounting - cleaning up');
-
-      if (sourceNodeRef.current) {
-        try {
-          sourceNodeRef.current.disconnect();
-          console.log('[TunerInterface] Source node disconnected');
-        } catch (e) {
-          console.log('[TunerInterface] Source already disconnected', e);
-        }
-      }
-
-      if (analyserNodeRef.current) {
-        try {
-          analyserNodeRef.current.disconnect();
-          console.log('[TunerInterface] Analyser node disconnected');
-        } catch (e) {
-          console.log('[TunerInterface] Analyser already disconnected', e);
-        }
-      }
-
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => {
-          track.stop();
-          console.log('[TunerInterface] Media track stopped');
-        });
-      }
-
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-        console.log('[TunerInterface] AudioContext closed');
-      }
+      console.log('[TunerInterface] useEffect cleanup running');
+      abortController.abort();
+      stopAudioStream(audioRefsRef.current);
     };
   }, []);
 
   const handleToggleListening = async () => {
     if (!isListening) {
-      console.log('[TunerInterface] Starting audio listening...');
+      console.log('[TunerInterface] Toggling to start audio listening...');
       setError(null);
 
-      try {
-        console.log('[TunerInterface] Requesting microphone access...');
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
-            sampleRate: 48000,
-          },
-        });
-
-        console.log('[TunerInterface] MediaStream obtained:', {
-          id: stream.id,
-          active: stream.active,
-          tracks: stream.getTracks().length,
-        });
-
-        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
-        console.log('[TunerInterface] AudioContext created:', {
-          state: context.state,
-          sampleRate: context.sampleRate,
-        });
-
-        if (context.state === 'suspended') {
-          console.log('[TunerInterface] Resuming suspended AudioContext...');
-          await context.resume();
-        }
-
-        streamRef.current = stream;
-        audioContextRef.current = context;
-
-        sourceNodeRef.current = context.createMediaStreamSource(stream);
-        analyserNodeRef.current = context.createAnalyser();
-        analyserNodeRef.current.fftSize = 2048;
-
-        sourceNodeRef.current.connect(analyserNodeRef.current);
-
-        console.log('[TunerInterface] ✅ Audio pipeline connected - listening started');
-        setIsListening(true);
-      } catch (err) {
-        console.error('[TunerInterface] ❌ Error starting audio:', err);
-        if (err instanceof Error) {
-          if (err.name === 'NotAllowedError') {
-            setError('Microphone access was denied. Please allow microphone access and try again.');
-          } else if (err.name === 'NotFoundError') {
-            setError('No microphone found. Please connect a microphone and try again.');
-          } else {
-            setError(`Failed to access microphone: ${err.message}`);
-          }
-        } else {
-          setError('An unknown error occurred while accessing the microphone.');
-        }
-      }
+      const result = await startAudioStream();
+      handleAudioStreamResult(result);
     } else {
-      console.log('[TunerInterface] Stopping audio listening...');
+      console.log('[TunerInterface] Toggling to stop audio listening...');
+      console.log('[TunerInterface] Current refs before stop:', {
+        hasStream: !!audioRefsRef.current.stream,
+        streamId: audioRefsRef.current.stream?.id,
+        streamActive: audioRefsRef.current.stream?.active,
+        hasAudioContext: !!audioRefsRef.current.audioContext,
+        audioContextState: audioRefsRef.current.audioContext?.state,
+      });
 
-      if (sourceNodeRef.current && analyserNodeRef.current) {
-        try {
-          sourceNodeRef.current.disconnect(analyserNodeRef.current);
-          console.log('[TunerInterface] Audio nodes disconnected');
-        } catch (e) {
-          console.log('[TunerInterface] Nodes already disconnected', e);
-        }
-      }
+      await stopAudioStream(audioRefsRef.current);
 
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((track) => {
-          track.stop();
-          console.log('[TunerInterface] Media track stopped');
-        });
-        streamRef.current = null;
-      }
+      audioRefsRef.current = {
+        analyserNode: null,
+        audioContext: null,
+        sourceNode: null,
+        stream: null,
+      };
 
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        await audioContextRef.current.close();
-        console.log('[TunerInterface] AudioContext closed');
-        audioContextRef.current = null;
-      }
-
-      sourceNodeRef.current = null;
-      analyserNodeRef.current = null;
-
-      console.log('[TunerInterface] ⏸️ Listening stopped - all resources released');
+      console.log('[TunerInterface] Setting isListening to false');
       setIsListening(false);
+      console.log('[TunerInterface] isListening state updated');
     }
   };
 
@@ -183,19 +132,23 @@ const TunerInterface = () => {
                 ? 'Listening to audio input... Play your flute to detect pitch!'
                 : 'Click "Start Listening" to begin audio processing'}
             </p>
-            {isListening && audioContextRef.current && streamRef.current && (
+            {isListening && audioRefsRef.current.audioContext && audioRefsRef.current.stream && (
               <div className="info-grid">
                 <div className="info-item">
                   <span className="info-label">Audio Context State:</span>
-                  <span className="info-value">{audioContextRef.current.state}</span>
+                  <span className="info-value">{audioRefsRef.current.audioContext.state}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Sample Rate:</span>
-                  <span className="info-value">{audioContextRef.current.sampleRate} Hz</span>
+                  <span className="info-value">
+                    {audioRefsRef.current.audioContext.sampleRate} Hz
+                  </span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Stream Active:</span>
-                  <span className="info-value">{streamRef.current.active ? 'Yes' : 'No'}</span>
+                  <span className="info-value">
+                    {audioRefsRef.current.stream.active ? 'Yes' : 'No'}
+                  </span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Listening Status:</span>

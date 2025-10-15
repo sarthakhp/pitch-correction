@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { useMicrophonePermission } from '../hooks/useMicrophonePermission';
 import './WelcomeScreen.css';
 
@@ -7,32 +6,12 @@ interface WelcomeScreenProps {
 }
 
 const WelcomeScreen = ({ onContinue }: WelcomeScreenProps) => {
-  const {
-    permissionGranted,
-    isChecking,
-    error,
-    checkIfPermissionGranted,
-    requestMicrophonePermission,
-  } = useMicrophonePermission();
+  const { permissionGranted, isChecking, error, requestMicrophonePermission } =
+    useMicrophonePermission();
 
   const handleRequestPermission = async () => {
     await requestMicrophonePermission();
-    if (permissionGranted) {
-      onContinue();
-    }
   };
-
-  useEffect(() => {
-    const checkAndNavigate = async () => {
-      const isGranted = await checkIfPermissionGranted();
-      if (isGranted) {
-        onContinue();
-      }
-    };
-
-    void checkAndNavigate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   return (
     <div className="welcome-screen">
