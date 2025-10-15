@@ -1,92 +1,26 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect } from 'react';
 import './TunerInterface.css';
-import {
-  startAudioStream,
-  stopAudioStream,
-  type AudioStreamRefs,
-  type AudioStreamResult,
-} from '../utils/audioStream';
+import { useAudioStream } from '../hooks/useAudioStream';
 
 const TunerInterface = () => {
-  const [isActive] = useState(true);
-  const [isListening, setIsListening] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const audioRefsRef = useRef<AudioStreamRefs>({
-    stream: null,
-    audioContext: null,
-    sourceNode: null,
-    analyserNode: null,
+  const { isListening, error, audioRefs, toggleListening } = useAudioStream({
+    autoStart: true,
   });
 
-  const handleAudioStreamResult = (result: AudioStreamResult) => {
-    if (result.success) {
-      audioRefsRef.current = result.refs;
-      setIsListening(true);
-    } else {
-      setError(result.error || 'Failed to start audio stream');
-      setIsListening(false);
-    }
-  };
-
   useEffect(() => {
-    console.log('[TunerInterface] useEffect mounted');
-    const abortController = new AbortController();
-
-    const initializeAudio = async () => {
-      console.log('[TunerInterface] Auto-starting audio listening...');
-      setError(null);
-
-      const result = await startAudioStream();
-
-      if (!abortController.signal.aborted) {
-        handleAudioStreamResult(result);
-      } else {
-        console.log('[TunerInterface] Component unmounted before audio started, stopping audio...');
-        await stopAudioStream(result.refs);
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space' && event.target === document.body && isListening !== 0) {
+        event.preventDefault();
+        toggleListening();
       }
     };
 
-    initializeAudio();
+    window.addEventListener('keydown', handleKeyPress);
 
     return () => {
-      console.log('[TunerInterface] useEffect cleanup running');
-      abortController.abort();
-      stopAudioStream(audioRefsRef.current);
+      window.removeEventListener('keydown', handleKeyPress);
     };
-  }, []);
-
-  const handleToggleListening = async () => {
-    if (!isListening) {
-      console.log('[TunerInterface] Toggling to start audio listening...');
-      setError(null);
-
-      const result = await startAudioStream();
-      handleAudioStreamResult(result);
-    } else {
-      console.log('[TunerInterface] Toggling to stop audio listening...');
-      console.log('[TunerInterface] Current refs before stop:', {
-        hasStream: !!audioRefsRef.current.stream,
-        streamId: audioRefsRef.current.stream?.id,
-        streamActive: audioRefsRef.current.stream?.active,
-        hasAudioContext: !!audioRefsRef.current.audioContext,
-        audioContextState: audioRefsRef.current.audioContext?.state,
-      });
-
-      await stopAudioStream(audioRefsRef.current);
-
-      audioRefsRef.current = {
-        analyserNode: null,
-        audioContext: null,
-        sourceNode: null,
-        stream: null,
-      };
-
-      console.log('[TunerInterface] Setting isListening to false');
-      setIsListening(false);
-      console.log('[TunerInterface] isListening state updated');
-    }
-  };
+  }, [toggleListening, isListening]);
 
   return (
     <div className="tuner-interface">
@@ -94,11 +28,9 @@ const TunerInterface = () => {
         <header className="tuner-header">
           <h1>🎼 Flute Tuner</h1>
           <div className="status-indicator">
-            <span
-              className={`status-dot ${isListening ? 'listening' : isActive ? 'active' : ''}`}
-            ></span>
+            <span className={`status-dot ${isListening === 1 ? 'listening' : isListening === 0 ? 'loading' : 'active'}`}></span>
             <span className="status-text">
-              {isListening ? 'Listening' : isActive ? 'Ready' : 'Initializing...'}
+              {isListening === 1 ? 'Listening' : isListening === 0 ? 'Starting...' : 'Ready'}
             </span>
           </div>
         </header>
@@ -106,15 +38,20 @@ const TunerInterface = () => {
         <div className="tuner-content">
           <div className="control-section">
             <button
-              className={`listening-button ${isListening ? 'listening' : 'ready'}`}
-              onClick={handleToggleListening}
-              disabled={!isActive}
+              className={`listening-button ${isListening === 1 ? 'listening' : isListening === 0 ? 'loading' : 'ready'}`}
+              onClick={toggleListening}
+              disabled={isListening === 0}
             >
-              <span className="button-icon">{isListening ? '⏸️' : '🎤'}</span>
+              <span className="button-icon">
+                {isListening === 1 ? '⏸️' : isListening === 0 ? '⏳' : '🎤'}
+              </span>
               <span className="button-text">
-                {isListening ? 'Stop Listening' : 'Start Listening'}
+                {isListening === 1 ? 'Stop Listening' : isListening === 0 ? 'Starting Microphone...' : 'Start Listening'}
               </span>
             </button>
+            <p className="keyboard-hint">
+              Press <kbd>Space</kbd> to toggle
+            </p>
           </div>
 
           {error && (
@@ -128,26 +65,26 @@ const TunerInterface = () => {
             <div className="placeholder-icon">🎵</div>
             <h2>Tuner Interface</h2>
             <p>
-              {isListening
+              {isListening === 1
                 ? 'Listening to audio input... Play your flute to detect pitch!'
+                : isListening === 0
+                ? 'Requesting microphone access...'
                 : 'Click "Start Listening" to begin audio processing'}
             </p>
-            {isListening && audioRefsRef.current.audioContext && audioRefsRef.current.stream && (
+            {isListening === 1 && audioRefs.current.audioContext && audioRefs.current.stream && (
               <div className="info-grid">
                 <div className="info-item">
                   <span className="info-label">Audio Context State:</span>
-                  <span className="info-value">{audioRefsRef.current.audioContext.state}</span>
+                  <span className="info-value">{audioRefs.current.audioContext.state}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Sample Rate:</span>
-                  <span className="info-value">
-                    {audioRefsRef.current.audioContext.sampleRate} Hz
-                  </span>
+                  <span className="info-value">{audioRefs.current.audioContext.sampleRate} Hz</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Stream Active:</span>
                   <span className="info-value">
-                    {audioRefsRef.current.stream.active ? 'Yes' : 'No'}
+                    {audioRefs.current.stream.active ? 'Yes' : 'No'}
                   </span>
                 </div>
                 <div className="info-item">

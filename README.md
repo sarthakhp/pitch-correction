@@ -42,7 +42,7 @@ pitch-correction/
 │   │   ├── TunerInterface.tsx       # Main tuner UI
 │   │   └── WelcomeScreen.tsx        # Initial welcome screen
 │   ├── hooks/           # Custom React hooks
-│   │   └── useAudioInput.ts         # Microphone access hook
+│   │   └── useAudioStream.ts         # Microphone access hook
 │   ├── utils/           # Utility functions
 │   │   ├── audioContext.ts          # Shared audio context
 │   │   ├── pitchDetection.ts        # Pitch detection algorithms
