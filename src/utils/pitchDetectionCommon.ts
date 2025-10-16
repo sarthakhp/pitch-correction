@@ -1,6 +1,9 @@
+import type { NoteInfo } from './noteDetection';
+
 export interface PitchDetectionResult {
   frequency: number | null;
   clarity: number;
+  note: NoteInfo | null;
 }
 
 export const MIN_FREQUENCY = 80;

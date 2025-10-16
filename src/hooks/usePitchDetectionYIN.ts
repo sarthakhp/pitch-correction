@@ -16,13 +16,14 @@ export const usePitchDetectionYIN = ({
   const [pitchResult, setPitchResult] = useState<PitchDetectionResult>({
     frequency: null,
     clarity: 0,
+    note: null,
   });
 
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!isActive || !analyserNode || !audioContext) {
-      setPitchResult({ frequency: null, clarity: 0 });
+      setPitchResult({ frequency: null, clarity: 0, note: null });
       return;
     }
 

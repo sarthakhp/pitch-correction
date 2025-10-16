@@ -6,6 +6,7 @@ import {
   calculateRMS,
   isValidFrequency,
 } from './pitchDetectionCommon';
+import { frequencyToNote } from './noteDetection';
 
 const YIN_THRESHOLD = 0.15;
 
@@ -21,7 +22,7 @@ export const detectPitchYIN = (
   const rms = calculateRMS(buffer);
 
   if (rms < RMS_THRESHOLD) {
-    return { frequency: null, clarity: 0 };
+    return { frequency: null, clarity: 0, note: null };
   }
 
   const maxLag = Math.floor(sampleRate / MIN_FREQUENCY);
@@ -73,7 +74,7 @@ export const detectPitchYIN = (
   }
 
   if (bestTau === -1) {
-    return { frequency: null, clarity: 0 };
+    return { frequency: null, clarity: 0, note: null };
   }
 
   let betterTau = bestTau;
@@ -87,14 +88,17 @@ export const detectPitchYIN = (
   const frequency = sampleRate / betterTau;
 
   if (!isValidFrequency(frequency)) {
-    return { frequency: null, clarity: 0 };
+    return { frequency: null, clarity: 0, note: null };
   }
 
   const clarity = 1 - cumulativeMeanNormalizedDifference[bestTau];
+  const roundedFrequency = Math.round(frequency * 10) / 10;
+  const note = frequencyToNote(roundedFrequency);
 
   return {
-    frequency: Math.round(frequency * 10) / 10,
+    frequency: roundedFrequency,
     clarity: Math.max(0, Math.min(1, clarity)),
+    note,
   };
 };
 

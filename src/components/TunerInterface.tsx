@@ -1,18 +1,11 @@
 import './TunerInterface.css';
 import { ListeningState, type ListeningStateType, useAudioStream } from '../hooks/useAudioStream';
 import ListeningControl from './ListeningControl';
-import { usePitchDetection } from '../hooks/usePitchDetection';
 import { usePitchDetectionYIN } from '../hooks/usePitchDetectionYIN';
 
 const TunerInterface = () => {
   const { isListening, error, audioRefs, toggleListening } = useAudioStream({
     autoStart: true,
-  });
-
-  const pitchResultAutocorrelation = usePitchDetection({
-    analyserNode: audioRefs.current.analyserNode,
-    audioContext: audioRefs.current.audioContext,
-    isActive: isListening === ListeningState.Listening,
   });
 
   const pitchResultYIN = usePitchDetectionYIN({
@@ -52,42 +45,41 @@ const TunerInterface = () => {
           )}
 
           {isListening === ListeningState.Listening && (
-            <div className="pitch-comparison-container">
-              <div className="pitch-display">
-                <div className="pitch-method-label">Autocorrelation Method</div>
-                <div className="pitch-label">Detected Pitch:</div>
-                <div className="pitch-value">
-                  {pitchResultAutocorrelation.frequency !== null
-                    ? `${pitchResultAutocorrelation.frequency.toFixed(1)} Hz`
-                    : 'No pitch detected'}
-                </div>
-                {pitchResultAutocorrelation.frequency !== null && (
-                  <div className="pitch-clarity">
-                    Clarity: {(pitchResultAutocorrelation.clarity * 100).toFixed(0)}%
+            <div className="pitch-display pitch-display-yin">
+              <div className="pitch-method-label">YIN Algorithm Method</div>
+              {pitchResultYIN.frequency !== null && pitchResultYIN.note ? (
+                <>
+                  <div className="pitch-label">Musical Note:</div>
+                  <div className="pitch-value note-value">{pitchResultYIN.note.fullNoteName}</div>
+                  <div className="pitch-frequency">
+                    {pitchResultYIN.frequency.toFixed(1)} Hz
+                    {pitchResultYIN.note.centsOff !== 0 && (
+                      <span className="cents-off">
+                        {' '}
+                        ({pitchResultYIN.note.centsOff > 0 ? '+' : ''}
+                        {pitchResultYIN.note.centsOff} cents)
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-
-              <div className="pitch-display pitch-display-yin">
-                <div className="pitch-method-label">YIN Algorithm Method</div>
-                <div className="pitch-label">Detected Pitch:</div>
-                <div className="pitch-value">
-                  {pitchResultYIN.frequency !== null
-                    ? `${pitchResultYIN.frequency.toFixed(1)} Hz`
-                    : 'No pitch detected'}
-                </div>
-                {pitchResultYIN.frequency !== null && (
                   <div className="pitch-clarity">
                     Clarity: {(pitchResultYIN.clarity * 100).toFixed(0)}%
                   </div>
-                )}
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="pitch-value">No pitch detected</div>
+                </>
+              )}
             </div>
           )}
 
           <div className="placeholder-message">
-            <div className="placeholder-icon">🎵</div>
-            <h2>Tuner Interface</h2>
+            {isListening !== ListeningState.Listening && (
+              <>
+                <div className="placeholder-icon">🎵</div>
+                <h2>Tuner Interface</h2>
+              </>
+            )}
             <p>Play your flute to detect pitch!</p>
             {isListening === ListeningState.Listening &&
               audioRefs.current.audioContext &&
@@ -115,9 +107,6 @@ const TunerInterface = () => {
                   </div>
                 </div>
               )}
-            <p className="next-steps">
-              Next steps: Implement pitch detection and piano synthesis components
-            </p>
           </div>
         </div>
       </div>

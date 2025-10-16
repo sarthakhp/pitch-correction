@@ -27,7 +27,7 @@ export const startAudioStream = async (): Promise<AudioStreamResult> => {
       audio: {
         echoCancellation: false,
         noiseSuppression: false,
-        autoGainControl: false,
+        autoGainControl: true,
         sampleRate: 48000,
       },
     });
